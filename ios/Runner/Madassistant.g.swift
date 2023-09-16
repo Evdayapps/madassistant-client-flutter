@@ -51,6 +51,7 @@ struct NetworkCallLogModel {
   var options: Options? = nil
   var request: Request? = nil
   var response: Response? = nil
+  var exception: ExceptionModel? = nil
 
   static func fromList(_ list: [Any?]) -> NetworkCallLogModel? {
     var options: Options? = nil
@@ -65,11 +66,16 @@ struct NetworkCallLogModel {
     if let responseList: [Any?] = nilOrValue(list[2]) {
       response = Response.fromList(responseList)
     }
+    var exception: ExceptionModel? = nil
+    if let exceptionList: [Any?] = nilOrValue(list[3]) {
+      exception = ExceptionModel.fromList(exceptionList)
+    }
 
     return NetworkCallLogModel(
       options: options,
       request: request,
-      response: response
+      response: response,
+      exception: exception
     )
   }
   func toList() -> [Any?] {
@@ -77,6 +83,7 @@ struct NetworkCallLogModel {
       options?.toList(),
       request?.toList(),
       response?.toList(),
+      exception?.toList(),
     ]
   }
 }
@@ -224,18 +231,102 @@ struct Response {
   }
 }
 
+/// Generated class from Pigeon that represents data sent in messages.
+struct ExceptionModel {
+  var exceptionThreadName: String
+  var crash: Bool
+  var type: String? = nil
+  var message: String? = nil
+  var throwableMessage: String? = nil
+  var data: [String?: Any?]? = nil
+  var stackTrace: [ExceptionStacktraceLineModel?]
+  var threads: [String?: [ExceptionStacktraceLineModel?]?]? = nil
+
+  static func fromList(_ list: [Any?]) -> ExceptionModel? {
+    let exceptionThreadName = list[0] as! String
+    let crash = list[1] as! Bool
+    let type: String? = nilOrValue(list[2])
+    let message: String? = nilOrValue(list[3])
+    let throwableMessage: String? = nilOrValue(list[4])
+    let data: [String?: Any?]? = nilOrValue(list[5])
+    let stackTrace = list[6] as! [ExceptionStacktraceLineModel?]
+    let threads: [String?: [ExceptionStacktraceLineModel?]?]? = nilOrValue(list[7])
+
+    return ExceptionModel(
+      exceptionThreadName: exceptionThreadName,
+      crash: crash,
+      type: type,
+      message: message,
+      throwableMessage: throwableMessage,
+      data: data,
+      stackTrace: stackTrace,
+      threads: threads
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      exceptionThreadName,
+      crash,
+      type,
+      message,
+      throwableMessage,
+      data,
+      stackTrace,
+      threads,
+    ]
+  }
+}
+
+/// Generated class from Pigeon that represents data sent in messages.
+struct ExceptionStacktraceLineModel {
+  var className: String
+  var fileName: String? = nil
+  var nativeMethod: Bool
+  var methodName: String
+  var lineNumber: Int64
+
+  static func fromList(_ list: [Any?]) -> ExceptionStacktraceLineModel? {
+    let className = list[0] as! String
+    let fileName: String? = nilOrValue(list[1])
+    let nativeMethod = list[2] as! Bool
+    let methodName = list[3] as! String
+    let lineNumber = list[4] is Int64 ? list[4] as! Int64 : Int64(list[4] as! Int32)
+
+    return ExceptionStacktraceLineModel(
+      className: className,
+      fileName: fileName,
+      nativeMethod: nativeMethod,
+      methodName: methodName,
+      lineNumber: lineNumber
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      className,
+      fileName,
+      nativeMethod,
+      methodName,
+      lineNumber,
+    ]
+  }
+}
+
 private class MADAssistantCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
       case 128:
-        return Handshake.fromList(self.readValue() as! [Any?])
+        return ExceptionModel.fromList(self.readValue() as! [Any?])
       case 129:
-        return NetworkCallLogModel.fromList(self.readValue() as! [Any?])
+        return ExceptionStacktraceLineModel.fromList(self.readValue() as! [Any?])
       case 130:
-        return Options.fromList(self.readValue() as! [Any?])
+        return Handshake.fromList(self.readValue() as! [Any?])
       case 131:
-        return Request.fromList(self.readValue() as! [Any?])
+        return NetworkCallLogModel.fromList(self.readValue() as! [Any?])
       case 132:
+        return Options.fromList(self.readValue() as! [Any?])
+      case 133:
+        return Request.fromList(self.readValue() as! [Any?])
+      case 134:
         return Response.fromList(self.readValue() as! [Any?])
       default:
         return super.readValue(ofType: type)
@@ -245,20 +336,26 @@ private class MADAssistantCodecReader: FlutterStandardReader {
 
 private class MADAssistantCodecWriter: FlutterStandardWriter {
   override func writeValue(_ value: Any) {
-    if let value = value as? Handshake {
+    if let value = value as? ExceptionModel {
       super.writeByte(128)
       super.writeValue(value.toList())
-    } else if let value = value as? NetworkCallLogModel {
+    } else if let value = value as? ExceptionStacktraceLineModel {
       super.writeByte(129)
       super.writeValue(value.toList())
-    } else if let value = value as? Options {
+    } else if let value = value as? Handshake {
       super.writeByte(130)
       super.writeValue(value.toList())
-    } else if let value = value as? Request {
+    } else if let value = value as? NetworkCallLogModel {
       super.writeByte(131)
       super.writeValue(value.toList())
-    } else if let value = value as? Response {
+    } else if let value = value as? Options {
       super.writeByte(132)
+      super.writeValue(value.toList())
+    } else if let value = value as? Request {
+      super.writeByte(133)
+      super.writeValue(value.toList())
+    } else if let value = value as? Response {
+      super.writeByte(134)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -527,14 +624,18 @@ private class MADAssistantCallbackCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
       case 128:
-        return Handshake.fromList(self.readValue() as! [Any?])
+        return ExceptionModel.fromList(self.readValue() as! [Any?])
       case 129:
-        return NetworkCallLogModel.fromList(self.readValue() as! [Any?])
+        return ExceptionStacktraceLineModel.fromList(self.readValue() as! [Any?])
       case 130:
-        return Options.fromList(self.readValue() as! [Any?])
+        return Handshake.fromList(self.readValue() as! [Any?])
       case 131:
-        return Request.fromList(self.readValue() as! [Any?])
+        return NetworkCallLogModel.fromList(self.readValue() as! [Any?])
       case 132:
+        return Options.fromList(self.readValue() as! [Any?])
+      case 133:
+        return Request.fromList(self.readValue() as! [Any?])
+      case 134:
         return Response.fromList(self.readValue() as! [Any?])
       default:
         return super.readValue(ofType: type)
@@ -544,20 +645,26 @@ private class MADAssistantCallbackCodecReader: FlutterStandardReader {
 
 private class MADAssistantCallbackCodecWriter: FlutterStandardWriter {
   override func writeValue(_ value: Any) {
-    if let value = value as? Handshake {
+    if let value = value as? ExceptionModel {
       super.writeByte(128)
       super.writeValue(value.toList())
-    } else if let value = value as? NetworkCallLogModel {
+    } else if let value = value as? ExceptionStacktraceLineModel {
       super.writeByte(129)
       super.writeValue(value.toList())
-    } else if let value = value as? Options {
+    } else if let value = value as? Handshake {
       super.writeByte(130)
       super.writeValue(value.toList())
-    } else if let value = value as? Request {
+    } else if let value = value as? NetworkCallLogModel {
       super.writeByte(131)
       super.writeValue(value.toList())
-    } else if let value = value as? Response {
+    } else if let value = value as? Options {
       super.writeByte(132)
+      super.writeValue(value.toList())
+    } else if let value = value as? Request {
+      super.writeByte(133)
+      super.writeValue(value.toList())
+    } else if let value = value as? Response {
+      super.writeByte(134)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)

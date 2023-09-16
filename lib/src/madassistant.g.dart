@@ -21,6 +21,7 @@ class NetworkCallLogModel {
     this.options,
     this.request,
     this.response,
+    this.exception,
   });
 
   Options? options;
@@ -29,20 +30,32 @@ class NetworkCallLogModel {
 
   Response? response;
 
+  ExceptionModel? exception;
+
   Object encode() {
     return <Object?>[
       options?.encode(),
       request?.encode(),
       response?.encode(),
+      exception?.encode(),
     ];
   }
 
   static NetworkCallLogModel decode(Object result) {
     result as List<Object?>;
     return NetworkCallLogModel(
-      options: result[0] != null ? Options.decode(result[0]! as List<Object?>) : null,
-      request: result[1] != null ? Request.decode(result[1]! as List<Object?>) : null,
-      response: result[2] != null ? Response.decode(result[2]! as List<Object?>) : null,
+      options: result[0] != null
+          ? Options.decode(result[0]! as List<Object?>)
+          : null,
+      request: result[1] != null
+          ? Request.decode(result[1]! as List<Object?>)
+          : null,
+      response: result[2] != null
+          ? Response.decode(result[2]! as List<Object?>)
+          : null,
+      exception: result[3] != null
+          ? ExceptionModel.decode(result[3]! as List<Object?>)
+          : null,
     );
   }
 }
@@ -88,7 +101,9 @@ class Options {
       readTimeoutMillis: result[2] as int?,
       writeTimeoutMillis: result[3] as int?,
       protocol: result[4] as String?,
-      handshake: result[5] != null ? Handshake.decode(result[5]! as List<Object?>) : null,
+      handshake: result[5] != null
+          ? Handshake.decode(result[5]! as List<Object?>)
+          : null,
     );
   }
 }
@@ -216,25 +231,127 @@ class Response {
   }
 }
 
+class ExceptionModel {
+  ExceptionModel({
+    required this.exceptionThreadName,
+    required this.crash,
+    this.type,
+    this.message,
+    this.throwableMessage,
+    this.data,
+    required this.stackTrace,
+    this.threads,
+  });
+
+  String exceptionThreadName;
+
+  bool crash;
+
+  String? type;
+
+  String? message;
+
+  String? throwableMessage;
+
+  Map<String?, Object?>? data;
+
+  List<ExceptionStacktraceLineModel?> stackTrace;
+
+  Map<String?, List<ExceptionStacktraceLineModel?>?>? threads;
+
+  Object encode() {
+    return <Object?>[
+      exceptionThreadName,
+      crash,
+      type,
+      message,
+      throwableMessage,
+      data,
+      stackTrace,
+      threads,
+    ];
+  }
+
+  static ExceptionModel decode(Object result) {
+    result as List<Object?>;
+    return ExceptionModel(
+      exceptionThreadName: result[0]! as String,
+      crash: result[1]! as bool,
+      type: result[2] as String?,
+      message: result[3] as String?,
+      throwableMessage: result[4] as String?,
+      data: (result[5] as Map<Object?, Object?>?)?.cast<String?, Object?>(),
+      stackTrace: (result[6] as List<Object?>?)!.cast<ExceptionStacktraceLineModel?>(),
+      threads: (result[7] as Map<Object?, Object?>?)?.cast<String?, List<ExceptionStacktraceLineModel?>?>(),
+    );
+  }
+}
+
+class ExceptionStacktraceLineModel {
+  ExceptionStacktraceLineModel({
+    required this.className,
+    this.fileName,
+    required this.nativeMethod,
+    required this.methodName,
+    required this.lineNumber,
+  });
+
+  String className;
+
+  String? fileName;
+
+  bool nativeMethod;
+
+  String methodName;
+
+  int lineNumber;
+
+  Object encode() {
+    return <Object?>[
+      className,
+      fileName,
+      nativeMethod,
+      methodName,
+      lineNumber,
+    ];
+  }
+
+  static ExceptionStacktraceLineModel decode(Object result) {
+    result as List<Object?>;
+    return ExceptionStacktraceLineModel(
+      className: result[0]! as String,
+      fileName: result[1] as String?,
+      nativeMethod: result[2]! as bool,
+      methodName: result[3]! as String,
+      lineNumber: result[4]! as int,
+    );
+  }
+}
+
 class _MADAssistantCodec extends StandardMessageCodec {
   const _MADAssistantCodec();
-
   @override
   void writeValue(WriteBuffer buffer, Object? value) {
-    if (value is Handshake) {
+    if (value is ExceptionModel) {
       buffer.putUint8(128);
       writeValue(buffer, value.encode());
-    } else if (value is NetworkCallLogModel) {
+    } else if (value is ExceptionStacktraceLineModel) {
       buffer.putUint8(129);
       writeValue(buffer, value.encode());
-    } else if (value is Options) {
+    } else if (value is Handshake) {
       buffer.putUint8(130);
       writeValue(buffer, value.encode());
-    } else if (value is Request) {
+    } else if (value is NetworkCallLogModel) {
       buffer.putUint8(131);
       writeValue(buffer, value.encode());
-    } else if (value is Response) {
+    } else if (value is Options) {
       buffer.putUint8(132);
+      writeValue(buffer, value.encode());
+    } else if (value is Request) {
+      buffer.putUint8(133);
+      writeValue(buffer, value.encode());
+    } else if (value is Response) {
+      buffer.putUint8(134);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -244,15 +361,19 @@ class _MADAssistantCodec extends StandardMessageCodec {
   @override
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
-      case 128:
+      case 128: 
+        return ExceptionModel.decode(readValue(buffer)!);
+      case 129: 
+        return ExceptionStacktraceLineModel.decode(readValue(buffer)!);
+      case 130: 
         return Handshake.decode(readValue(buffer)!);
-      case 129:
+      case 131: 
         return NetworkCallLogModel.decode(readValue(buffer)!);
-      case 130:
+      case 132: 
         return Options.decode(readValue(buffer)!);
-      case 131:
+      case 133: 
         return Request.decode(readValue(buffer)!);
-      case 132:
+      case 134: 
         return Response.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -264,7 +385,8 @@ class MADAssistant {
   /// Constructor for [MADAssistant].  The [binaryMessenger] named argument is
   /// available for dependency injection.  If it is left null, the default
   /// BinaryMessenger will be used which routes to the host platform.
-  MADAssistant({BinaryMessenger? binaryMessenger}) : _binaryMessenger = binaryMessenger;
+  MADAssistant({BinaryMessenger? binaryMessenger})
+      : _binaryMessenger = binaryMessenger;
   final BinaryMessenger? _binaryMessenger;
 
   static const MessageCodec<Object?> codec = _MADAssistantCodec();
@@ -296,7 +418,8 @@ class MADAssistant {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.connect', codec,
         binaryMessenger: _binaryMessenger);
-    final List<Object?>? replyList = await channel.send(null) as List<Object?>?;
+    final List<Object?>? replyList =
+        await channel.send(null) as List<Object?>?;
     if (replyList == null) {
       throw PlatformException(
         code: 'channel-error',
@@ -317,7 +440,8 @@ class MADAssistant {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.disconnect', codec,
         binaryMessenger: _binaryMessenger);
-    final List<Object?>? replyList = await channel.send(null) as List<Object?>?;
+    final List<Object?>? replyList =
+        await channel.send(null) as List<Object?>?;
     if (replyList == null) {
       throw PlatformException(
         code: 'channel-error',
@@ -338,7 +462,8 @@ class MADAssistant {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.getConnectionState', codec,
         binaryMessenger: _binaryMessenger);
-    final List<Object?>? replyList = await channel.send(null) as List<Object?>?;
+    final List<Object?>? replyList =
+        await channel.send(null) as List<Object?>?;
     if (replyList == null) {
       throw PlatformException(
         code: 'channel-error',
@@ -364,7 +489,8 @@ class MADAssistant {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.startSession', codec,
         binaryMessenger: _binaryMessenger);
-    final List<Object?>? replyList = await channel.send(null) as List<Object?>?;
+    final List<Object?>? replyList =
+        await channel.send(null) as List<Object?>?;
     if (replyList == null) {
       throw PlatformException(
         code: 'channel-error',
@@ -385,7 +511,8 @@ class MADAssistant {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.endSession', codec,
         binaryMessenger: _binaryMessenger);
-    final List<Object?>? replyList = await channel.send(null) as List<Object?>?;
+    final List<Object?>? replyList =
+        await channel.send(null) as List<Object?>?;
     if (replyList == null) {
       throw PlatformException(
         code: 'channel-error',
@@ -406,7 +533,8 @@ class MADAssistant {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.hasActiveSession', codec,
         binaryMessenger: _binaryMessenger);
-    final List<Object?>? replyList = await channel.send(null) as List<Object?>?;
+    final List<Object?>? replyList =
+        await channel.send(null) as List<Object?>?;
     if (replyList == null) {
       throw PlatformException(
         code: 'channel-error',
@@ -432,7 +560,8 @@ class MADAssistant {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.logCrashes', codec,
         binaryMessenger: _binaryMessenger);
-    final List<Object?>? replyList = await channel.send(null) as List<Object?>?;
+    final List<Object?>? replyList =
+        await channel.send(null) as List<Object?>?;
     if (replyList == null) {
       throw PlatformException(
         code: 'channel-error',
@@ -453,7 +582,8 @@ class MADAssistant {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.logNetworkCall', codec,
         binaryMessenger: _binaryMessenger);
-    final List<Object?>? replyList = await channel.send(<Object?>[arg_data]) as List<Object?>?;
+    final List<Object?>? replyList =
+        await channel.send(<Object?>[arg_data]) as List<Object?>?;
     if (replyList == null) {
       throw PlatformException(
         code: 'channel-error',
@@ -470,8 +600,7 @@ class MADAssistant {
     }
   }
 
-  Future<void> logCrashReport(
-      Object arg_throwable, String? arg_message, Map<Object?, Object?>? arg_data) async {
+  Future<void> logCrashReport(Object arg_throwable, String? arg_message, Map<Object?, Object?>? arg_data) async {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.logCrashReport', codec,
         binaryMessenger: _binaryMessenger);
@@ -493,8 +622,7 @@ class MADAssistant {
     }
   }
 
-  Future<void> logAnalyticsEvent(
-      String arg_destination, String arg_eventName, Map<Object?, Object?> arg_data) async {
+  Future<void> logAnalyticsEvent(String arg_destination, String arg_eventName, Map<Object?, Object?> arg_data) async {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.logAnalyticsEvent', codec,
         binaryMessenger: _binaryMessenger);
@@ -516,8 +644,7 @@ class MADAssistant {
     }
   }
 
-  Future<void> logGenericLog(
-      int arg_type, String arg_tag, String arg_message, Map<Object?, Object?>? arg_data) async {
+  Future<void> logGenericLog(int arg_type, String arg_tag, String arg_message, Map<Object?, Object?>? arg_data) async {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.logGenericLog', codec,
         binaryMessenger: _binaryMessenger);
@@ -539,8 +666,7 @@ class MADAssistant {
     }
   }
 
-  Future<void> logException(
-      Object arg_throwable, String? arg_message, Map<String?, dynamic>? arg_data) async {
+  Future<void> logException(Object arg_throwable, String? arg_message, Map<String?, dynamic?>? arg_data) async {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.logException', codec,
         binaryMessenger: _binaryMessenger);
@@ -565,23 +691,28 @@ class MADAssistant {
 
 class _MADAssistantCallbackCodec extends StandardMessageCodec {
   const _MADAssistantCallbackCodec();
-
   @override
   void writeValue(WriteBuffer buffer, Object? value) {
-    if (value is Handshake) {
+    if (value is ExceptionModel) {
       buffer.putUint8(128);
       writeValue(buffer, value.encode());
-    } else if (value is NetworkCallLogModel) {
+    } else if (value is ExceptionStacktraceLineModel) {
       buffer.putUint8(129);
       writeValue(buffer, value.encode());
-    } else if (value is Options) {
+    } else if (value is Handshake) {
       buffer.putUint8(130);
       writeValue(buffer, value.encode());
-    } else if (value is Request) {
+    } else if (value is NetworkCallLogModel) {
       buffer.putUint8(131);
       writeValue(buffer, value.encode());
-    } else if (value is Response) {
+    } else if (value is Options) {
       buffer.putUint8(132);
+      writeValue(buffer, value.encode());
+    } else if (value is Request) {
+      buffer.putUint8(133);
+      writeValue(buffer, value.encode());
+    } else if (value is Response) {
+      buffer.putUint8(134);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -591,15 +722,19 @@ class _MADAssistantCallbackCodec extends StandardMessageCodec {
   @override
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
-      case 128:
+      case 128: 
+        return ExceptionModel.decode(readValue(buffer)!);
+      case 129: 
+        return ExceptionStacktraceLineModel.decode(readValue(buffer)!);
+      case 130: 
         return Handshake.decode(readValue(buffer)!);
-      case 129:
+      case 131: 
         return NetworkCallLogModel.decode(readValue(buffer)!);
-      case 130:
+      case 132: 
         return Options.decode(readValue(buffer)!);
-      case 131:
+      case 133: 
         return Request.decode(readValue(buffer)!);
-      case 132:
+      case 134: 
         return Response.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -610,23 +745,23 @@ class _MADAssistantCallbackCodec extends StandardMessageCodec {
 abstract class MADAssistantCallback {
   static const MessageCodec<Object?> codec = _MADAssistantCallbackCodec();
 
-  Future<void> onSessionStarted(int sessionId);
+  void onSessionStarted(int sessionId);
 
-  Future<void> onSessionEnded(int sessionId);
+  void onSessionEnded(int sessionId);
 
-  Future<void> onConnectionStateChanged(ConnectionManagerState state);
+  void onConnectionStateChanged(ConnectionManagerState state);
 
-  Future<void> onDisconnected(int code, String message);
+  void onDisconnected(int code, String message);
 
-  Future<void> logInfo(String tag, String message);
+  void logInfo(String tag, String message);
 
-  Future<void> logVerbose(String tag, String message);
+  void logVerbose(String tag, String message);
 
-  Future<void> logDebug(String tag, String message);
+  void logDebug(String tag, String message);
 
-  Future<void> logWarn(String tag, String message);
+  void logWarn(String tag, String message);
 
-  Future<void> logError(Object throwable);
+  void logError(Object throwable);
 
   static void setup(MADAssistantCallback? api, {BinaryMessenger? binaryMessenger}) {
     {
@@ -638,12 +773,12 @@ abstract class MADAssistantCallback {
       } else {
         channel.setMessageHandler((Object? message) async {
           assert(message != null,
-              'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.onSessionStarted was null.');
+          'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.onSessionStarted was null.');
           final List<Object?> args = (message as List<Object?>?)!;
           final int? arg_sessionId = (args[0] as int?);
           assert(arg_sessionId != null,
               'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.onSessionStarted was null, expected non-null int.');
-          await api.onSessionStarted(arg_sessionId!);
+          api.onSessionStarted(arg_sessionId!);
           return;
         });
       }
@@ -657,12 +792,12 @@ abstract class MADAssistantCallback {
       } else {
         channel.setMessageHandler((Object? message) async {
           assert(message != null,
-              'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.onSessionEnded was null.');
+          'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.onSessionEnded was null.');
           final List<Object?> args = (message as List<Object?>?)!;
           final int? arg_sessionId = (args[0] as int?);
           assert(arg_sessionId != null,
               'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.onSessionEnded was null, expected non-null int.');
-          await api.onSessionEnded(arg_sessionId!);
+          api.onSessionEnded(arg_sessionId!);
           return;
         });
       }
@@ -676,13 +811,12 @@ abstract class MADAssistantCallback {
       } else {
         channel.setMessageHandler((Object? message) async {
           assert(message != null,
-              'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.onConnectionStateChanged was null.');
+          'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.onConnectionStateChanged was null.');
           final List<Object?> args = (message as List<Object?>?)!;
-          final ConnectionManagerState? arg_state =
-              args[0] == null ? null : ConnectionManagerState.values[args[0]! as int];
+          final ConnectionManagerState? arg_state = args[0] == null ? null : ConnectionManagerState.values[args[0]! as int];
           assert(arg_state != null,
               'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.onConnectionStateChanged was null, expected non-null ConnectionManagerState.');
-          await api.onConnectionStateChanged(arg_state!);
+          api.onConnectionStateChanged(arg_state!);
           return;
         });
       }
@@ -696,7 +830,7 @@ abstract class MADAssistantCallback {
       } else {
         channel.setMessageHandler((Object? message) async {
           assert(message != null,
-              'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.onDisconnected was null.');
+          'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.onDisconnected was null.');
           final List<Object?> args = (message as List<Object?>?)!;
           final int? arg_code = (args[0] as int?);
           assert(arg_code != null,
@@ -704,7 +838,7 @@ abstract class MADAssistantCallback {
           final String? arg_message = (args[1] as String?);
           assert(arg_message != null,
               'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.onDisconnected was null, expected non-null String.');
-          await api.onDisconnected(arg_code!, arg_message!);
+          api.onDisconnected(arg_code!, arg_message!);
           return;
         });
       }
@@ -718,7 +852,7 @@ abstract class MADAssistantCallback {
       } else {
         channel.setMessageHandler((Object? message) async {
           assert(message != null,
-              'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logInfo was null.');
+          'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logInfo was null.');
           final List<Object?> args = (message as List<Object?>?)!;
           final String? arg_tag = (args[0] as String?);
           assert(arg_tag != null,
@@ -726,7 +860,7 @@ abstract class MADAssistantCallback {
           final String? arg_message = (args[1] as String?);
           assert(arg_message != null,
               'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logInfo was null, expected non-null String.');
-          await api.logInfo(arg_tag!, arg_message!);
+          api.logInfo(arg_tag!, arg_message!);
           return;
         });
       }
@@ -740,7 +874,7 @@ abstract class MADAssistantCallback {
       } else {
         channel.setMessageHandler((Object? message) async {
           assert(message != null,
-              'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logVerbose was null.');
+          'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logVerbose was null.');
           final List<Object?> args = (message as List<Object?>?)!;
           final String? arg_tag = (args[0] as String?);
           assert(arg_tag != null,
@@ -748,7 +882,7 @@ abstract class MADAssistantCallback {
           final String? arg_message = (args[1] as String?);
           assert(arg_message != null,
               'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logVerbose was null, expected non-null String.');
-          await api.logVerbose(arg_tag!, arg_message!);
+          api.logVerbose(arg_tag!, arg_message!);
           return;
         });
       }
@@ -762,7 +896,7 @@ abstract class MADAssistantCallback {
       } else {
         channel.setMessageHandler((Object? message) async {
           assert(message != null,
-              'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logDebug was null.');
+          'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logDebug was null.');
           final List<Object?> args = (message as List<Object?>?)!;
           final String? arg_tag = (args[0] as String?);
           assert(arg_tag != null,
@@ -770,7 +904,7 @@ abstract class MADAssistantCallback {
           final String? arg_message = (args[1] as String?);
           assert(arg_message != null,
               'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logDebug was null, expected non-null String.');
-          await api.logDebug(arg_tag!, arg_message!);
+          api.logDebug(arg_tag!, arg_message!);
           return;
         });
       }
@@ -784,7 +918,7 @@ abstract class MADAssistantCallback {
       } else {
         channel.setMessageHandler((Object? message) async {
           assert(message != null,
-              'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logWarn was null.');
+          'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logWarn was null.');
           final List<Object?> args = (message as List<Object?>?)!;
           final String? arg_tag = (args[0] as String?);
           assert(arg_tag != null,
@@ -792,7 +926,7 @@ abstract class MADAssistantCallback {
           final String? arg_message = (args[1] as String?);
           assert(arg_message != null,
               'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logWarn was null, expected non-null String.');
-          await api.logWarn(arg_tag!, arg_message!);
+          api.logWarn(arg_tag!, arg_message!);
           return;
         });
       }
@@ -806,12 +940,12 @@ abstract class MADAssistantCallback {
       } else {
         channel.setMessageHandler((Object? message) async {
           assert(message != null,
-              'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logError was null.');
+          'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logError was null.');
           final List<Object?> args = (message as List<Object?>?)!;
-          final Object? arg_throwable = args[0];
+          final Object? arg_throwable = (args[0] as Object?);
           assert(arg_throwable != null,
               'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logError was null, expected non-null Object.');
-          await api.logError(arg_throwable!);
+          api.logError(arg_throwable!);
           return;
         });
       }

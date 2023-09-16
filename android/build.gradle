@@ -2,7 +2,7 @@ group 'com.evdayapps.madassistant_flutter'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.7.10'
+    ext.kotlin_version = '1.8.22'
     repositories {
         google()
         mavenCentral()
@@ -53,8 +53,8 @@ android {
     dependencies {
         testImplementation 'org.jetbrains.kotlin:kotlin-test'
         testImplementation 'org.mockito:mockito-core:5.1.1'
-//        api project(path: ':madassistant-clientsdk')
-        implementation 'com.github.Evdayapps.madassistant-clientsdk:lib:0.0.27'
+//        api project(path: ':madassistant-client')
+        implementation 'com.github.Evdayapps:madassistant-clientsdk:0.0.29'
     }
 
     testOptions {
@@ -62,9 +62,9 @@ android {
             useJUnitPlatform()
 
             testLogging {
-               events "passed", "skipped", "failed", "standardOut", "standardError"
-               outputs.upToDateWhen {false}
-               showStandardStreams = true
+                events "passed", "skipped", "failed", "standardOut", "standardError"
+                outputs.upToDateWhen { false }
+                showStandardStreams = true
             }
         }
     }

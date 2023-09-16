@@ -1,4 +1,4 @@
 rootProject.name = 'madassistant_flutter'
 
-//include ':madassistant-clientsdk'
-//project(':madassistant-clientsdk').projectDir = file("../madassistant-clientlib/lib")
+//include ':madassistant-client'
+//project(':madassistant-client').projectDir = file("../../madassistant-clientlib/lib")

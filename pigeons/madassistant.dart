@@ -148,7 +148,7 @@ class ExceptionModel {
   final List<ExceptionStacktraceLineModel?> stackTrace;
 
   //final ExceptionModel? cause;
-  final Map<String, List<ExceptionStacktraceLineModel?>?>? threads;
+  final Map<String?, List<ExceptionStacktraceLineModel?>?>? threads;
 
   ExceptionModel({
     required this.exceptionThreadName,
@@ -183,34 +183,25 @@ class ExceptionStacktraceLineModel {
 abstract class MADAssistantCallback {
   // Callback for when a new session is started
   // [sessionId] is the timestamp of the new session
-  @async
   void onSessionStarted(int sessionId);
 
   // Callback for when an ongoing session is ended
-  @async
   void onSessionEnded(int sessionId);
 
   // Callback to notify the listener that the state has changed
-  @async
   void onConnectionStateChanged(ConnectionManagerState state);
 
   // Callback for when the connection is disconnected
-  @async
   void onDisconnected(int code, String message);
 
   // Logging methods
-  @async
   void logInfo(String tag, String message);
 
-  @async
   void logVerbose(String tag, String message);
 
-  @async
   void logDebug(String tag, String message);
 
-  @async
   void logWarn(String tag, String message);
 
-  @async
   void logError(Object throwable);
 }
