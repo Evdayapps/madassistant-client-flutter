@@ -622,7 +622,7 @@ class MADAssistant {
     }
   }
 
-  Future<void> logAnalyticsEvent(String arg_destination, String arg_eventName, Map<Object?, Object?> arg_data) async {
+  Future<void> logAnalyticsEvent(String arg_destination, String arg_eventName, Map<String?, dynamic?>? arg_data) async {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.logAnalyticsEvent', codec,
         binaryMessenger: _binaryMessenger);
@@ -644,7 +644,7 @@ class MADAssistant {
     }
   }
 
-  Future<void> logGenericLog(int arg_type, String arg_tag, String arg_message, Map<Object?, Object?>? arg_data) async {
+  Future<void> logGenericLog(int arg_type, String arg_tag, String arg_message, Map<String?, dynamic?>? arg_data) async {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.logGenericLog', codec,
         binaryMessenger: _binaryMessenger);

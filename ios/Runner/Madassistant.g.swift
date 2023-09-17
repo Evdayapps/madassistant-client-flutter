@@ -390,8 +390,8 @@ protocol MADAssistant {
   func logCrashes(completion: @escaping (Result<Void, Error>) -> Void)
   func logNetworkCall(data: NetworkCallLogModel, completion: @escaping (Result<Void, Error>) -> Void)
   func logCrashReport(throwable: Any, message: String?, data: [AnyHashable: Any?]?, completion: @escaping (Result<Void, Error>) -> Void)
-  func logAnalyticsEvent(destination: String, eventName: String, data: [AnyHashable: Any?], completion: @escaping (Result<Void, Error>) -> Void)
-  func logGenericLog(type: Int64, tag: String, message: String, data: [AnyHashable: Any?]?, completion: @escaping (Result<Void, Error>) -> Void)
+  func logAnalyticsEvent(destination: String, eventName: String, data: [String?: dynamic]?, completion: @escaping (Result<Void, Error>) -> Void)
+  func logGenericLog(type: Int64, tag: String, message: String, data: [String?: dynamic]?, completion: @escaping (Result<Void, Error>) -> Void)
   func logException(throwable: Any, message: String?, data: [String: dynamic]?, completion: @escaping (Result<Void, Error>) -> Void)
 }
 
@@ -566,7 +566,7 @@ class MADAssistantSetup {
         let args = message as! [Any?]
         let destinationArg = args[0] as! String
         let eventNameArg = args[1] as! String
-        let dataArg = args[2] as! [AnyHashable: Any?]
+        let dataArg: [String?: dynamic]? = nilOrValue(args[2])
         api.logAnalyticsEvent(destination: destinationArg, eventName: eventNameArg, data: dataArg) { result in
           switch result {
             case .success:
@@ -586,7 +586,7 @@ class MADAssistantSetup {
         let typeArg = args[0] is Int64 ? args[0] as! Int64 : Int64(args[0] as! Int32)
         let tagArg = args[1] as! String
         let messageArg = args[2] as! String
-        let dataArg: [AnyHashable: Any?]? = nilOrValue(args[3])
+        let dataArg: [String?: dynamic]? = nilOrValue(args[3])
         api.logGenericLog(type: typeArg, tag: tagArg, message: messageArg, data: dataArg) { result in
           switch result {
             case .success:

@@ -1,4 +1,5 @@
 library madassistant;
 
-export 'src/madassistant.g.dart';
-export 'src/madassistant_callback_impl.dart';
+export 'src/madassistant_models.dart';
+export 'src/madassistant.dart';
+export 'src/madassistant_callback.dart';

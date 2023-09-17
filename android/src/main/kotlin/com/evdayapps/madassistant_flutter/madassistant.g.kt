@@ -443,7 +443,7 @@ interface MADAssistant {
     fun logAnalyticsEvent(
         destination: String,
         eventName: String,
-        data: Map<Any, Any?>,
+        data: Map<String?, Any>?,
         callback: (Result<Unit>) -> Unit
     )
 
@@ -451,7 +451,7 @@ interface MADAssistant {
         type: Long,
         tag: String,
         message: String,
-        data: Map<Any, Any?>?,
+        data: Map<String?, Any>?,
         callback: (Result<Unit>) -> Unit
     )
 
@@ -706,7 +706,7 @@ interface MADAssistant {
                         val args = message as List<Any?>
                         val destinationArg = args[0] as String
                         val eventNameArg = args[1] as String
-                        val dataArg = args[2] as Map<Any, Any?>
+                        val dataArg = args[2] as Map<String?, Any>?
                         api.logAnalyticsEvent(
                             destinationArg,
                             eventNameArg,
@@ -736,7 +736,7 @@ interface MADAssistant {
                         val typeArg = args[0].let { if (it is Int) it.toLong() else it as Long }
                         val tagArg = args[1] as String
                         val messageArg = args[2] as String
-                        val dataArg = args[3] as Map<Any, Any?>?
+                        val dataArg = args[3] as Map<String?, Any>?
                         api.logGenericLog(
                             typeArg,
                             tagArg,

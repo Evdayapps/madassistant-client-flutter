@@ -49,10 +49,10 @@ abstract class MADAssistant {
   void logCrashReport(Object throwable, String? message, Map? data);
 
   @async
-  void logAnalyticsEvent(String destination, String eventName, Map data);
+  void logAnalyticsEvent(String destination, String eventName, Map<String?, dynamic>? data);
 
   @async
-  void logGenericLog(int type, String tag, String message, Map? data);
+  void logGenericLog(int type, String tag, String message, Map<String?, dynamic>? data);
 
   @async
   void logException(Object throwable, String? message, Map<String, dynamic>? data);

@@ -9,6 +9,7 @@ import android.content.Context
 import com.evdayapps.madassistant.clientlib.MADAssistantClient
 import com.evdayapps.madassistant.clientlib.MADAssistantClientImpl
 import com.evdayapps.madassistant.clientlib.connection.ConnectionManager
+import com.evdayapps.madassistant.common.models.networkcalls.Options
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
@@ -223,7 +224,20 @@ class MadassistantFlutterPlugin : FlutterPlugin, MethodCallHandler, MADAssistant
         data: NetworkCallLogModel,
         callback: (Result<Unit>) -> Unit
     ) {
-        TODO("Not yet implemented")
+        client?.logNetworkCall(
+            data = com.evdayapps.madassistant.common.models.networkcalls.NetworkCallLogModel(
+                options = Options(
+                    threadName = data.options?.threadName,
+                    connectTimeoutMillis = data.options?.connectTimeoutMillis,
+
+                )
+            ),
+        )
+        client?.logAnalyticsEvent(
+            destination = destination,
+            eventName = eventName,
+            data = data?.filterKeys { it != null } as? Map<String, Any?> ?: mapOf(),
+        )
     }
 
     override fun logCrashReport(
@@ -238,20 +252,29 @@ class MadassistantFlutterPlugin : FlutterPlugin, MethodCallHandler, MADAssistant
     override fun logAnalyticsEvent(
         destination: String,
         eventName: String,
-        data: Map<Any, Any?>,
+        data: Map<String?, Any>?,
         callback: (Result<Unit>) -> Unit
     ) {
-        TODO("Not yet implemented")
+        client?.logAnalyticsEvent(
+            destination = destination,
+            eventName = eventName,
+            data = data?.filterKeys { it != null } as? Map<String, Any?> ?: mapOf(),
+        )
     }
 
     override fun logGenericLog(
         type: Long,
         tag: String,
         message: String,
-        data: Map<Any, Any?>?,
+        data: Map<String?, Any>?,
         callback: (Result<Unit>) -> Unit
     ) {
-        TODO("Not yet implemented")
+        client?.logGenericLog(
+            type = type.toInt(),
+            tag = tag,
+            message = message,
+            data = data?.filterKeys { it != null } as? Map<String, Any?> ?: mapOf(),
+        )
     }
 
     override fun logException(
