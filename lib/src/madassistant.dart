@@ -274,13 +274,11 @@ class MADAssistant {
     }
   }
 
-  Future<void> logCrashReport(
-      Object arg_throwable, String? arg_message, Map<Object?, Object?>? arg_data) async {
+  Future<void> logCrashReport(ExceptionModel arg_exception) async {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.logCrashReport', codec,
         binaryMessenger: _binaryMessenger);
-    final List<Object?>? replyList =
-        await channel.send(<Object?>[arg_throwable, arg_message, arg_data]) as List<Object?>?;
+    final List<Object?>? replyList = await channel.send(<Object?>[arg_exception]) as List<Object?>?;
     if (replyList == null) {
       throw PlatformException(
         code: 'channel-error',
@@ -298,7 +296,7 @@ class MADAssistant {
   }
 
   Future<void> logAnalyticsEvent(
-      String arg_destination, String arg_eventName, Map<Object?, Object?> arg_data) async {
+      String arg_destination, String arg_eventName, Map<Object?, Object?>? arg_data) async {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.logAnalyticsEvent', codec,
         binaryMessenger: _binaryMessenger);
@@ -343,13 +341,11 @@ class MADAssistant {
     }
   }
 
-  Future<void> logException(
-      Object arg_throwable, String? arg_message, Map<String?, dynamic>? arg_data) async {
+  Future<void> logException(ExceptionModel arg_exception) async {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.logException', codec,
         binaryMessenger: _binaryMessenger);
-    final List<Object?>? replyList =
-        await channel.send(<Object?>[arg_throwable, arg_message, arg_data]) as List<Object?>?;
+    final List<Object?>? replyList = await channel.send(<Object?>[arg_exception]) as List<Object?>?;
     if (replyList == null) {
       throw PlatformException(
         code: 'channel-error',

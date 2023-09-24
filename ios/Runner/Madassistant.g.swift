@@ -389,10 +389,10 @@ protocol MADAssistant {
   func hasActiveSession(completion: @escaping (Result<Bool, Error>) -> Void)
   func logCrashes(completion: @escaping (Result<Void, Error>) -> Void)
   func logNetworkCall(data: NetworkCallLogModel, completion: @escaping (Result<Void, Error>) -> Void)
-  func logCrashReport(throwable: Any, message: String?, data: [AnyHashable: Any?]?, completion: @escaping (Result<Void, Error>) -> Void)
-  func logAnalyticsEvent(destination: String, eventName: String, data: [String?: dynamic]?, completion: @escaping (Result<Void, Error>) -> Void)
-  func logGenericLog(type: Int64, tag: String, message: String, data: [String?: dynamic]?, completion: @escaping (Result<Void, Error>) -> Void)
-  func logException(throwable: Any, message: String?, data: [String: dynamic]?, completion: @escaping (Result<Void, Error>) -> Void)
+  func logCrashReport(exception: ExceptionModel, completion: @escaping (Result<Void, Error>) -> Void)
+  func logAnalyticsEvent(destination: String, eventName: String, data: [AnyHashable: Any?]?, completion: @escaping (Result<Void, Error>) -> Void)
+  func logGenericLog(type: Int64, tag: String, message: String, data: [AnyHashable: Any?]?, completion: @escaping (Result<Void, Error>) -> Void)
+  func logException(exception: ExceptionModel, completion: @escaping (Result<Void, Error>) -> Void)
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -545,10 +545,8 @@ class MADAssistantSetup {
     if let api = api {
       logCrashReportChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
-        let throwableArg = args[0]!
-        let messageArg: String? = nilOrValue(args[1])
-        let dataArg: [AnyHashable: Any?]? = nilOrValue(args[2])
-        api.logCrashReport(throwable: throwableArg, message: messageArg, data: dataArg) { result in
+        let exceptionArg = args[0] as! ExceptionModel
+        api.logCrashReport(exception: exceptionArg) { result in
           switch result {
             case .success:
               reply(wrapResult(nil))
@@ -566,7 +564,7 @@ class MADAssistantSetup {
         let args = message as! [Any?]
         let destinationArg = args[0] as! String
         let eventNameArg = args[1] as! String
-        let dataArg: [String?: dynamic]? = nilOrValue(args[2])
+        let dataArg: [AnyHashable: Any?]? = nilOrValue(args[2])
         api.logAnalyticsEvent(destination: destinationArg, eventName: eventNameArg, data: dataArg) { result in
           switch result {
             case .success:
@@ -586,7 +584,7 @@ class MADAssistantSetup {
         let typeArg = args[0] is Int64 ? args[0] as! Int64 : Int64(args[0] as! Int32)
         let tagArg = args[1] as! String
         let messageArg = args[2] as! String
-        let dataArg: [String?: dynamic]? = nilOrValue(args[3])
+        let dataArg: [AnyHashable: Any?]? = nilOrValue(args[3])
         api.logGenericLog(type: typeArg, tag: tagArg, message: messageArg, data: dataArg) { result in
           switch result {
             case .success:
@@ -603,10 +601,8 @@ class MADAssistantSetup {
     if let api = api {
       logExceptionChannel.setMessageHandler { message, reply in
         let args = message as! [Any?]
-        let throwableArg = args[0]!
-        let messageArg: String? = nilOrValue(args[1])
-        let dataArg: [String: dynamic]? = nilOrValue(args[2])
-        api.logException(throwable: throwableArg, message: messageArg, data: dataArg) { result in
+        let exceptionArg = args[0] as! ExceptionModel
+        api.logException(exception: exceptionArg) { result in
           switch result {
             case .success:
               reply(wrapResult(nil))
@@ -627,16 +623,6 @@ private class MADAssistantCallbackCodecReader: FlutterStandardReader {
         return ExceptionModel.fromList(self.readValue() as! [Any?])
       case 129:
         return ExceptionStacktraceLineModel.fromList(self.readValue() as! [Any?])
-      case 130:
-        return Handshake.fromList(self.readValue() as! [Any?])
-      case 131:
-        return NetworkCallLogModel.fromList(self.readValue() as! [Any?])
-      case 132:
-        return Options.fromList(self.readValue() as! [Any?])
-      case 133:
-        return Request.fromList(self.readValue() as! [Any?])
-      case 134:
-        return Response.fromList(self.readValue() as! [Any?])
       default:
         return super.readValue(ofType: type)
     }
@@ -650,21 +636,6 @@ private class MADAssistantCallbackCodecWriter: FlutterStandardWriter {
       super.writeValue(value.toList())
     } else if let value = value as? ExceptionStacktraceLineModel {
       super.writeByte(129)
-      super.writeValue(value.toList())
-    } else if let value = value as? Handshake {
-      super.writeByte(130)
-      super.writeValue(value.toList())
-    } else if let value = value as? NetworkCallLogModel {
-      super.writeByte(131)
-      super.writeValue(value.toList())
-    } else if let value = value as? Options {
-      super.writeByte(132)
-      super.writeValue(value.toList())
-    } else if let value = value as? Request {
-      super.writeByte(133)
-      super.writeValue(value.toList())
-    } else if let value = value as? Response {
-      super.writeByte(134)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -743,9 +714,9 @@ class MADAssistantCallback {
       completion()
     }
   }
-  func logError(throwable throwableArg: Any, completion: @escaping () -> Void) {
+  func logError(error errorArg: ExceptionModel, completion: @escaping () -> Void) {
     let channel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.madassistant.MADAssistantCallback.logError", binaryMessenger: binaryMessenger, codec: codec)
-    channel.sendMessage([throwableArg] as [Any?]) { _ in
+    channel.sendMessage([errorArg] as [Any?]) { _ in
       completion()
     }
   }

@@ -54,7 +54,7 @@ android {
         testImplementation 'org.jetbrains.kotlin:kotlin-test'
         testImplementation 'org.mockito:mockito-core:5.1.1'
 //        api project(path: ':madassistant-client')
-        implementation 'com.github.Evdayapps:madassistant-clientsdk:0.0.29'
+        implementation 'com.github.Evdayapps:madassistant-clientsdk:0.0.31'
     }
 
     testOptions {

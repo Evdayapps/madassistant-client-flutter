@@ -46,16 +46,16 @@ abstract class MADAssistant {
   void logNetworkCall(NetworkCallLogModel data);
 
   @async
-  void logCrashReport(Object throwable, String? message, Map? data);
+  void logCrashReport(ExceptionModel exception);
 
   @async
-  void logAnalyticsEvent(String destination, String eventName, Map<String?, dynamic>? data);
+  void logAnalyticsEvent(String destination, String eventName, Map? data);
 
   @async
-  void logGenericLog(int type, String tag, String message, Map<String?, dynamic>? data);
+  void logGenericLog(int type, String tag, String message, Map? data);
 
   @async
-  void logException(Object throwable, String? message, Map<String, dynamic>? data);
+  void logException(ExceptionModel exception);
 }
 
 class NetworkCallLogModel {
@@ -203,5 +203,5 @@ abstract class MADAssistantCallback {
 
   void logWarn(String tag, String message);
 
-  void logError(Object throwable);
+  void logError(ExceptionModel error);
 }
