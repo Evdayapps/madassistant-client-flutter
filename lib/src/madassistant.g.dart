@@ -600,12 +600,12 @@ class MADAssistant {
     }
   }
 
-  Future<void> logCrashReport(Object arg_throwable, String? arg_message, Map<Object?, Object?>? arg_data) async {
+  Future<void> logCrashReport(ExceptionModel arg_exception) async {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.logCrashReport', codec,
         binaryMessenger: _binaryMessenger);
     final List<Object?>? replyList =
-        await channel.send(<Object?>[arg_throwable, arg_message, arg_data]) as List<Object?>?;
+        await channel.send(<Object?>[arg_exception]) as List<Object?>?;
     if (replyList == null) {
       throw PlatformException(
         code: 'channel-error',
@@ -622,7 +622,7 @@ class MADAssistant {
     }
   }
 
-  Future<void> logAnalyticsEvent(String arg_destination, String arg_eventName, Map<String?, dynamic?>? arg_data) async {
+  Future<void> logAnalyticsEvent(String arg_destination, String arg_eventName, Map<Object?, Object?>? arg_data) async {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.logAnalyticsEvent', codec,
         binaryMessenger: _binaryMessenger);
@@ -644,7 +644,7 @@ class MADAssistant {
     }
   }
 
-  Future<void> logGenericLog(int arg_type, String arg_tag, String arg_message, Map<String?, dynamic?>? arg_data) async {
+  Future<void> logGenericLog(int arg_type, String arg_tag, String arg_message, Map<Object?, Object?>? arg_data) async {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.logGenericLog', codec,
         binaryMessenger: _binaryMessenger);
@@ -666,12 +666,12 @@ class MADAssistant {
     }
   }
 
-  Future<void> logException(Object arg_throwable, String? arg_message, Map<String?, dynamic?>? arg_data) async {
+  Future<void> logException(ExceptionModel arg_exception) async {
     final BasicMessageChannel<Object?> channel = BasicMessageChannel<Object?>(
         'dev.flutter.pigeon.madassistant.MADAssistant.logException', codec,
         binaryMessenger: _binaryMessenger);
     final List<Object?>? replyList =
-        await channel.send(<Object?>[arg_throwable, arg_message, arg_data]) as List<Object?>?;
+        await channel.send(<Object?>[arg_exception]) as List<Object?>?;
     if (replyList == null) {
       throw PlatformException(
         code: 'channel-error',
@@ -699,21 +699,6 @@ class _MADAssistantCallbackCodec extends StandardMessageCodec {
     } else if (value is ExceptionStacktraceLineModel) {
       buffer.putUint8(129);
       writeValue(buffer, value.encode());
-    } else if (value is Handshake) {
-      buffer.putUint8(130);
-      writeValue(buffer, value.encode());
-    } else if (value is NetworkCallLogModel) {
-      buffer.putUint8(131);
-      writeValue(buffer, value.encode());
-    } else if (value is Options) {
-      buffer.putUint8(132);
-      writeValue(buffer, value.encode());
-    } else if (value is Request) {
-      buffer.putUint8(133);
-      writeValue(buffer, value.encode());
-    } else if (value is Response) {
-      buffer.putUint8(134);
-      writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
     }
@@ -726,16 +711,6 @@ class _MADAssistantCallbackCodec extends StandardMessageCodec {
         return ExceptionModel.decode(readValue(buffer)!);
       case 129: 
         return ExceptionStacktraceLineModel.decode(readValue(buffer)!);
-      case 130: 
-        return Handshake.decode(readValue(buffer)!);
-      case 131: 
-        return NetworkCallLogModel.decode(readValue(buffer)!);
-      case 132: 
-        return Options.decode(readValue(buffer)!);
-      case 133: 
-        return Request.decode(readValue(buffer)!);
-      case 134: 
-        return Response.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -761,7 +736,7 @@ abstract class MADAssistantCallback {
 
   void logWarn(String tag, String message);
 
-  void logError(Object throwable);
+  void logError(ExceptionModel error);
 
   static void setup(MADAssistantCallback? api, {BinaryMessenger? binaryMessenger}) {
     {
@@ -942,10 +917,10 @@ abstract class MADAssistantCallback {
           assert(message != null,
           'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logError was null.');
           final List<Object?> args = (message as List<Object?>?)!;
-          final Object? arg_throwable = (args[0] as Object?);
-          assert(arg_throwable != null,
-              'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logError was null, expected non-null Object.');
-          api.logError(arg_throwable!);
+          final ExceptionModel? arg_error = (args[0] as ExceptionModel?);
+          assert(arg_error != null,
+              'Argument for dev.flutter.pigeon.madassistant.MADAssistantCallback.logError was null, expected non-null ExceptionModel.');
+          api.logError(arg_error!);
           return;
         });
       }

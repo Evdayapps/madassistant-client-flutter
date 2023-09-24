@@ -9,13 +9,22 @@ import android.content.Context
 import com.evdayapps.madassistant.clientlib.MADAssistantClient
 import com.evdayapps.madassistant.clientlib.MADAssistantClientImpl
 import com.evdayapps.madassistant.clientlib.connection.ConnectionManager
+import com.evdayapps.madassistant.common.models.exceptions.ExceptionModel
+import com.evdayapps.madassistant.common.models.exceptions.ExceptionStacktraceLineModel
+import com.evdayapps.madassistant.common.models.networkcalls.Handshake
 import com.evdayapps.madassistant.common.models.networkcalls.Options
+import com.evdayapps.madassistant.common.models.networkcalls.Request
+import com.evdayapps.madassistant.common.models.networkcalls.Response
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.embedding.engine.plugins.activity.ActivityAware
 import io.flutter.embedding.engine.plugins.activity.ActivityPluginBinding
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
+import org.json.JSONArray
+import org.json.JSONObject
+import ExceptionModel as FlutterExceptionModel
+import ExceptionStacktraceLineModel as FlutterExceptionStacktraceLineModel
 
 /** MadassistantPlugin */
 class MadassistantFlutterPlugin : FlutterPlugin, MethodCallHandler, MADAssistant, ActivityAware {
@@ -60,8 +69,7 @@ class MadassistantFlutterPlugin : FlutterPlugin, MethodCallHandler, MADAssistant
     /** Initialise a new instance of MADAssistant */
     override fun init(passphrase: String, callback: (Result<Unit>) -> Unit) {
         if (client == null) {
-            client = MADAssistantClientImpl(
-                applicationContext = applicationContext!!,
+            client = MADAssistantClientImpl(applicationContext = applicationContext!!,
                 passphrase = passphrase,
                 callback = object : MADAssistantClient.Callback {
                     /**
@@ -72,28 +80,23 @@ class MadassistantFlutterPlugin : FlutterPlugin, MethodCallHandler, MADAssistant
                      */
                     override fun onConnectionStateChanged(state: ConnectionManager.State) {
                         activity?.runOnUiThread {
-                            madAssistantCallback?.onConnectionStateChanged(
-                                stateArg = state.let {
-                                    when (it) {
-                                        ConnectionManager.State.None -> ConnectionManagerState.NONE
-                                        ConnectionManager.State.Connecting -> ConnectionManagerState.CONNECTING
-                                        ConnectionManager.State.Connected -> ConnectionManagerState.CONNECTED
-                                        ConnectionManager.State.Disconnecting -> ConnectionManagerState.DISCONNECTING
-                                        ConnectionManager.State.Disconnected -> ConnectionManagerState.DISCONNECTED
-                                    }
-                                },
-                                callback = {}
-                            )
+                            madAssistantCallback?.onConnectionStateChanged(stateArg = state.let {
+                                when (it) {
+                                    ConnectionManager.State.None -> ConnectionManagerState.NONE
+                                    ConnectionManager.State.Connecting -> ConnectionManagerState.CONNECTING
+                                    ConnectionManager.State.Connected -> ConnectionManagerState.CONNECTED
+                                    ConnectionManager.State.Disconnecting -> ConnectionManagerState.DISCONNECTING
+                                    ConnectionManager.State.Disconnected -> ConnectionManagerState.DISCONNECTED
+                                }
+                            }, callback = {})
                         }
                     }
 
                     override fun onDisconnected(code: Int, message: String) {
                         activity?.runOnUiThread {
-                            madAssistantCallback?.onDisconnected(
-                                codeArg = code.toLong(),
+                            madAssistantCallback?.onDisconnected(codeArg = code.toLong(),
                                 messageArg = message,
-                                callback = {}
-                            )
+                                callback = {})
                         }
                     }
 
@@ -105,10 +108,8 @@ class MadassistantFlutterPlugin : FlutterPlugin, MethodCallHandler, MADAssistant
                      */
                     override fun onSessionEnded(sessionId: Long) {
                         activity?.runOnUiThread {
-                            madAssistantCallback?.onSessionEnded(
-                                sessionIdArg = sessionId,
-                                callback = {}
-                            )
+                            madAssistantCallback?.onSessionEnded(sessionIdArg = sessionId,
+                                callback = {})
                         }
                     }
 
@@ -124,10 +125,8 @@ class MadassistantFlutterPlugin : FlutterPlugin, MethodCallHandler, MADAssistant
                      */
                     override fun onSessionStarted(sessionId: Long) {
                         activity?.runOnUiThread {
-                            madAssistantCallback?.onSessionStarted(
-                                sessionIdArg = sessionId,
-                                callback = {}
-                            )
+                            madAssistantCallback?.onSessionStarted(sessionIdArg = sessionId,
+                                callback = {})
                         }
                     }
 
@@ -142,10 +141,15 @@ class MadassistantFlutterPlugin : FlutterPlugin, MethodCallHandler, MADAssistant
                     }
 
                     override fun e(throwable: Throwable) {
-                        // TODO Convert this
                         activity?.runOnUiThread {
                             madAssistantCallback?.logError(
-                                throwableArg = throwable,
+                                ExceptionModel(
+                                    threadName = "",
+                                    throwable = throwable,
+                                    isCrash = false,
+                                    message = throwable.message,
+                                    data = null
+                                ).toFlutterException(),
                                 callback = {},
                             )
                         }
@@ -221,30 +225,80 @@ class MadassistantFlutterPlugin : FlutterPlugin, MethodCallHandler, MADAssistant
     }
 
     override fun logNetworkCall(
-        data: NetworkCallLogModel,
-        callback: (Result<Unit>) -> Unit
+        data: NetworkCallLogModel, callback: (Result<Unit>) -> Unit
     ) {
         client?.logNetworkCall(
             data = com.evdayapps.madassistant.common.models.networkcalls.NetworkCallLogModel(
-                options = Options(
-                    threadName = data.options?.threadName,
-                    connectTimeoutMillis = data.options?.connectTimeoutMillis,
+                options = data.options?.let {
+                    Options(threadName = it.threadName,
+                        connectTimeoutMillis = it.connectTimeoutMillis?.toInt(),
+                        readTimeoutMillis = it.readTimeoutMillis?.toInt(),
+                        writeTimeoutMillis = it.writeTimeoutMillis?.toInt(),
+                        protocol = it.protocol,
+                        handshake = it.handshake?.let {
+                            Handshake(
+                                protocolVersion = it.protocolVersion, cipherSuite = it.cipherSuite
+                            )
+                        })
+                },
+                request = data.request?.let {
+                    Request(
+                        method = it.method,
+                        timestamp = it.timestamp,
+                        url = it.url,
+                        contentType = it.contentType,
+                        headers = it.headers?.filterNotNull()?.let { headers ->
+                            when {
+                                headers.isEmpty() -> null
+                                else -> JSONArray().apply {
+                                    headers.forEach { map ->
+                                        put(JSONObject().apply {
+                                            map.entries.forEach { entry ->
+                                                this.put(entry.key, entry.value)
+                                            }
+                                        })
+                                    }
 
-                )
+                                }
+                            }
+                        },
+                        body = it.body
+                    )
+                },
+                response = data.response?.let {
+                    Response(
+                        timestamp = it.timestamp,
+                        statusCode = it.statusCode?.toInt(),
+                        length = it.length,
+                        gzippedLength = it.gzippedLength,
+                        contentType = it.contentType,
+                        headers = it.headers?.filterNotNull()?.let { headers ->
+                            when {
+                                headers.isEmpty() -> null
+                                else -> JSONArray().apply {
+                                    headers.forEach { map ->
+                                        put(JSONObject().apply {
+                                            map.entries.forEach { entry ->
+                                                this.put(entry.key, entry.value)
+                                            }
+                                        })
+                                    }
+
+                                }
+                            }
+                        },
+                        body = it.body
+                    )
+                },
+                exception = data.exception?.let {
+                    mapExceptionModel(it)
+                }
             ),
-        )
-        client?.logAnalyticsEvent(
-            destination = destination,
-            eventName = eventName,
-            data = data?.filterKeys { it != null } as? Map<String, Any?> ?: mapOf(),
         )
     }
 
     override fun logCrashReport(
-        throwable: Any,
-        message: String?,
-        data: Map<Any, Any?>?,
-        callback: (Result<Unit>) -> Unit
+        exception: FlutterExceptionModel, callback: (Result<Unit>) -> Unit
     ) {
         TODO("Not yet implemented")
     }
@@ -252,13 +306,13 @@ class MadassistantFlutterPlugin : FlutterPlugin, MethodCallHandler, MADAssistant
     override fun logAnalyticsEvent(
         destination: String,
         eventName: String,
-        data: Map<String?, Any>?,
+        data: Map<Any, Any?>?,
         callback: (Result<Unit>) -> Unit
     ) {
         client?.logAnalyticsEvent(
             destination = destination,
             eventName = eventName,
-            data = data?.filterKeys { it != null } as? Map<String, Any?> ?: mapOf(),
+            data = data?.let { it as Map<String, Any?> } ?: mapOf()
         )
     }
 
@@ -266,23 +320,153 @@ class MadassistantFlutterPlugin : FlutterPlugin, MethodCallHandler, MADAssistant
         type: Long,
         tag: String,
         message: String,
-        data: Map<String?, Any>?,
+        data: Map<Any, Any?>?,
         callback: (Result<Unit>) -> Unit
     ) {
         client?.logGenericLog(
             type = type.toInt(),
             tag = tag,
             message = message,
-            data = data?.filterKeys { it != null } as? Map<String, Any?> ?: mapOf(),
+            data = data as? Map<String, Any?> ?: mapOf(),
         )
     }
 
     override fun logException(
-        throwable: Any,
-        message: String?,
-        data: Map<String, Any>?,
-        callback: (Result<Unit>) -> Unit
+        exception: FlutterExceptionModel, callback: (Result<Unit>) -> Unit
     ) {
-        TODO("Not yet implemented")
+        client?.logException(
+            exception = mapExceptionModel(exception)
+        )
+
     }
+
+
+    private fun mapExceptionModel(it: FlutterExceptionModel): ExceptionModel = ExceptionModel(
+        exceptionThreadName = it.exceptionThreadName,
+        crash = it.crash,
+        type = it.type,
+        message = it.message,
+        throwableMessage = it.throwableMessage,
+        data = it.data
+            ?.filter { list -> list.key != null }
+            ?.takeIf { list -> list.isNotEmpty() }
+            ?.let {
+                JSONObject().apply {
+                    it.entries.forEach { entry ->
+                        this.put(entry.key!!, entry.value)
+                    }
+                }
+            },
+        stackTrace = it.stackTrace.let {
+            it.filterNotNull().map {
+                ExceptionStacktraceLineModel(
+                    className = it.className,
+                    fileName = it.fileName,
+                    nativeMethod = it.nativeMethod,
+                    methodName = it.methodName,
+                    lineNumber = it.lineNumber.toInt()
+                )
+            }
+        },
+        cause = null,
+        threads = it.threads?.let {
+            it.filter { it.key != null }
+                .map {
+                    it.key!! to it.value!!.filterNotNull().map {
+                        ExceptionStacktraceLineModel(
+                            className = it.className,
+                            fileName = it.fileName,
+                            nativeMethod = it.nativeMethod,
+                            methodName = it.methodName,
+                            lineNumber = it.lineNumber.toInt()
+                        )
+                    }
+                }.toMap()
+        },
+    )
+}
+
+fun FlutterExceptionModel.toKotlinExceptionModel(): ExceptionModel {
+    return ExceptionModel(
+        exceptionThreadName = this.exceptionThreadName,
+        crash = this.crash,
+        type = this.type,
+        message = this.message,
+        throwableMessage = this.throwableMessage,
+        data = this.data
+            ?.filter { list -> list.key != null }
+            ?.takeIf { list -> list.isNotEmpty() }
+            ?.let {
+                JSONObject().apply {
+                    it.entries.forEach { entry ->
+                        this.put(entry.key!!, entry.value)
+                    }
+                }
+            },
+        stackTrace = this.stackTrace.let {
+            it.filterNotNull().map {
+                ExceptionStacktraceLineModel(
+                    className = it.className,
+                    fileName = it.fileName,
+                    nativeMethod = it.nativeMethod,
+                    methodName = it.methodName,
+                    lineNumber = it.lineNumber.toInt()
+                )
+            }
+        },
+        cause = null,
+        threads = this.threads?.let {
+            it.filter { it.key != null }
+                .map {
+                    it.key!! to it.value!!.filterNotNull().map {
+                        ExceptionStacktraceLineModel(
+                            className = it.className,
+                            fileName = it.fileName,
+                            nativeMethod = it.nativeMethod,
+                            methodName = it.methodName,
+                            lineNumber = it.lineNumber.toInt()
+                        )
+                    }
+                }.toMap()
+        },
+    )
+}
+
+fun ExceptionModel.toFlutterException(): FlutterExceptionModel {
+    return FlutterExceptionModel(
+        exceptionThreadName = this.exceptionThreadName,
+        crash = this.crash,
+        type = this.type,
+        message = this.message,
+        throwableMessage = this.throwableMessage,
+        data = this.data?.takeIf { it.length() > 0 }?.let {
+            val map = mutableMapOf<String, Any>()
+            it.keys().forEach { key ->
+                map.put(key, it[key])
+            }
+            map.toMap()
+        },
+        stackTrace = this.stackTrace.let {
+            it.map {
+                FlutterExceptionStacktraceLineModel(
+                    className = it.className,
+                    fileName = it.fileName,
+                    nativeMethod = it.nativeMethod,
+                    methodName = it.methodName,
+                    lineNumber = it.lineNumber.toLong()
+                )
+            }
+        },
+        threads = this.threads?.map { entry ->
+            entry.key to entry.value.map { item ->
+                FlutterExceptionStacktraceLineModel(
+                    className = item.className,
+                    fileName = item.fileName,
+                    nativeMethod = item.nativeMethod,
+                    methodName = item.methodName,
+                    lineNumber = item.lineNumber.toLong()
+                )
+            }
+        }?.toMap(),
+    )
 }
